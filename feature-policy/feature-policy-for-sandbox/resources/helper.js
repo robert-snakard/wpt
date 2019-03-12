@@ -3,13 +3,18 @@ const all_features = document.featurePolicy.allowedFeatures();
 
 // 'popups' is nonsensical in this test and it is not possible to test 'scripts'
 // within this test model.
-const ignore_features = ["popups", "scripts"];
+const ignore_features_for_auxilary_context = ["popups", "scripts"];
+
+// Feature-policies that represent specific sandbox flags.
+const sandbox_features = [
+    "forms", "modals", "orientation-lock", "pointer-lock", "popups",
+    "presentation", "scripts", "top-navigation"];
 
 // TODO(ekaramad): Figure out different inheritance requirements for different
 // policies.
 // Features which will be tested for propagation to auxiliary contexts.
 const features_that_propagate = all_features.filter(
-    (feature) => !ignore_features.includes(feature));
+    (feature) => !ignore_features_for_auxilary_context.includes(feature));
 
 var last_feature_message = null;
 var on_new_feature_callback = null;

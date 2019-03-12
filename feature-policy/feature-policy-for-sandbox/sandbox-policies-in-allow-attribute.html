@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<head>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+</head>
+<body>
+<div id="iframe-embedder"></div>
+<script src="./resources/helper.js"></script>
+<script>
+'use strict';
+
+const iframe_src = "/feature-policy/feature-policy-for-sandbox/resources/window_opener.html";
+
+promise_test( async () => {
+    for (const feature of sandbox_features) {
+    if (feature === "scripts")
+      continue;
+    const iframe = await add_iframe(
+        {src: iframe_src, allow: `${feature} *`, sandbox: "allow-scripts"});
+    iframe.contentWindow.postMessage({type: "feature", feature: feature}, "*");
+    const iframe_state = await feature_update(feature);
+    assert_true(iframe_state, `'${feature}' is disabled in <iframe>.'`);
+  }
+}, "Verify that sandbox related feature state set through 'allow' takes " +
+   " precedence over 'sandbox' attribute.");
+</script>
+</body>
