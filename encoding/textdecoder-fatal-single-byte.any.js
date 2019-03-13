@@ -31,19 +31,19 @@ var singleByteEncodings = [
      {encoding: 'x-mac-cyrillic', bad: []},
 ];
 
-singleByteEncodings.forEach(function(t) {
-    for (var i = 0; i < 256; ++i) {
-        if (t.bad.indexOf(i) != -1) {
-            test(function() {
-                assert_throws(new TypeError(), function() {
-                    new TextDecoder(t.encoding, {fatal: true}).decode(new Uint8Array([i]));
-                });
-            }, 'Throw due to fatal flag: ' + t.encoding + ' doesn\'t have a pointer ' + i);
-        }
-        else {
-            test(function() {
-                assert_equals(typeof new TextDecoder(t.encoding, {fatal: true}).decode(new Uint8Array([i])), "string");
-            }, 'Not throw: ' + t.encoding + ' has a pointer ' + i);
-        }
+singleByteEncodings.forEach(t => {
+  test(() => {
+    for (let i = 0; i < 256; ++i) {
+      const decoder = new TextDecoder(t.encoding, {fatal: true});
+      const array = new Uint8Array([i]);
+      if (t.bad.indexOf(i) != -1) {
+        assert_throws(
+          new TypeError(), () => { decoder.decode(array); },
+          `Throw due to fatal flag: ${t.encoding} doesn't have a pointer ${i}`);
+      } else {
+        assert_equals(typeof decoder.decode(array), "string",
+               `Not throw: ${t.encoding} has a pointer ${i}`);
+      }
     }
+  }, `Fatal flag and single byte encoding pointers: ${t.encoding}`);
 });
