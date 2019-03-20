@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<title>Basic use of stateful animator</title>
+<link rel="help" href="https://drafts.css-houdini.org/css-animationworklet/">
+
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="/web-animations/testcommon.js"></script>
+<script src="common.js"></script>
+
+<div id="target"></div>
+<div id="target2"></div>
+
+<script id="stateful_animator" type="text/worklet">
+  registerAnimator("stateful_animator", class {
+    constructor(options, state) {
+      this.current_velocity = state ? state.velocity : 0;
+    }
+    animate(currentTime, effect) {
+      effect.localTime = this.current_velocity;
+    }
+    state() {
+      return {
+        velocity: this.current_velocity + 100
+      };
+    }
+  });
+</script>
+
+<script id="invalid_stateful_animator" type="text/worklet">
+  registerAnimator("invalid_stateful_animator", class {
+    constructor(options, state) {
+      this.current_velocity = state ? state.velocity : 0;
+    }
+    animate(currentTime, effect) {
+      effect.localTime = this.current_velocity;
+    }
+    // The state function is invalid because it's not structure clonable.
+    state() {
+      this.current_velocity += 100;
+      return {
+        velocity: this.current_velocity
+      };
+    }
+  });
+</script>
+
+<script>
+  promise_test(async t => {
+    await runInAnimationWorklet(document.getElementById('stateful_animator').textContent);
+    const target = document.getElementById('target');
+    const effect = new KeyframeEffect(target, [{ opacity: 0 }], { duration: 1000 });
+    const animation = new WorkletAnimation('stateful_animator', effect);
+    animation.play();
+
+    await waitForAnimationFrameWithCondition(_ => {
+      return getComputedStyle(target).opacity != '1';
+    });
+
+    animation.cancel();
+  }, "Stateful animator can use its state to update the animation. Pass if test is not timeout.");
+
+  promise_test(async t => {
+    await runInAnimationWorklet(document.getElementById('invalid_stateful_animator').textContent);
+    const target = document.getElementById('target2');
+    const effect = new KeyframeEffect(target, [{ opacity: 0 }], { duration: 1000 });
+    const animation = new WorkletAnimation('invalid_stateful_animator', effect);
+    animation.play();
+
+    // TODO(yigu): We should be more strict when the state function is invalid,
+    // e.g. throw an exception.
+    assert_equals(getComputedStyle(target).opacity, '1');
+
+    animation.cancel();
+  }, "Animator with invalid state function should not work.");
+</script>
